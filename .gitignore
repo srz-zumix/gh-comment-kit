@@ -24,8 +24,8 @@ go.work.sum
 # env file
 .env
 
-/gh-announcement
-/gh-announcement.exe
+/gh-commentator
+/gh-commentator.exe
 
 # temp
 [Tt]emp/

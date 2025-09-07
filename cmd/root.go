@@ -7,14 +7,14 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/srz-zumix/gh-announcement/version"
+	"github.com/srz-zumix/gh-commentator/version"
 	"github.com/srz-zumix/go-gh-extension/pkg/actions"
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "gh-announcement",
+	Use:     "gh-commentator",
 	Short:   "A tool to manage GitHub comments",
-	Long:    `A tool that lets you post trackable comments and announce updates to everyone.`,
+	Long:    `A tool for posting trackable comments and providing the latest updates.`,
 	Version: version.Version,
 }
 

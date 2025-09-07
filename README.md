@@ -1,3 +1,3 @@
-# gh-announcement
+# gh-commentator
 
-A tool that lets you post trackable comments and announce updates to everyone.
+A tool for posting trackable comments and providing the latest updates.
