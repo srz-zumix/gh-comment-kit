@@ -8,9 +8,9 @@ import (
 
 type MetaData struct {
 	Hash  string `json:"hash"`
-	URL   string `json:"url"`
+	URL   string `json:"url,omitempty"`
 	Index int    `json:"index"`
-	Group string `json:"group,omitempty"`
+	Group string `json:"group"`
 }
 
 func CreateMetaData(source any, index int, group string, url string) MetaData {
@@ -42,5 +42,5 @@ func ParseMetaData(commentBody string) (*MetaData, error) {
 
 func (m MetaData) ToHTML() string {
 	jsonStr, _ := json.Marshal(m)
-	return fmt.Sprintf("<!--gh-commentator %s-->", jsonStr)
+	return fmt.Sprintf("<!--gh-commentator %s -->", jsonStr)
 }

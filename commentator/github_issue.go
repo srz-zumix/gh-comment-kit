@@ -37,21 +37,27 @@ func NewGitHubCommentator(repo repository.Repository, target any) (*GitHubCommen
 }
 
 func (g *GitHubCommentator) CreateMetaData(source any, index int, group string) MetaData {
-	url := actions.GetRunURL()
+	var url string
+	if actions.IsRunsOn() {
+		url = actions.GetRunURL()
+	}
 	return CreateMetaData(source, index, group, url)
 }
 
-func (g *GitHubCommentator) Comment(body string, user string, meta MetaData) error {
+func (g *GitHubCommentator) Comment(body string, user string, meta MetaData) (string, error) {
 	comments, err := g.ListComments(meta)
 	if err != nil {
-		return fmt.Errorf("failed to list comments: %w", err)
+		return "", fmt.Errorf("failed to list comments: %w", err)
 	}
 	last := g.GetLastComment(comments)
 	if last != nil {
 		meta.Index = last.MetaData.Index + 1
 	}
-	_, err = gh.CreateIssueComment(g.ctx, g.client, g.Repository, g.Target, body+"\n"+meta.ToHTML(), user)
-	return err
+	c, err := gh.CreateIssueComment(g.ctx, g.client, g.Repository, g.Target, body+"\n"+meta.ToHTML(), user)
+	if err != nil {
+		return "", fmt.Errorf("failed to create comment: %w", err)
+	}
+	return c.GetHTMLURL(), nil
 }
 
 func (g *GitHubCommentator) ListComments(meta MetaData) ([]*Comment, error) {
@@ -63,6 +69,9 @@ func (g *GitHubCommentator) ListComments(meta MetaData) ([]*Comment, error) {
 	for _, c := range comments {
 		m, err := ParseMetaData(*c.Body)
 		if err != nil {
+			continue
+		}
+		if m.Group != meta.Group {
 			continue
 		}
 		result = append(result, &Comment{
@@ -91,4 +100,12 @@ func (g *GitHubCommentator) GetLastComment(comments []*Comment) *Comment {
 		}
 	}
 	return last
+}
+
+func (g *GitHubCommentator) GetTargetURL() (string, error) {
+	issue, err := gh.GetIssue(g.ctx, g.client, g.Repository, g.Target)
+	if err != nil {
+		return "", fmt.Errorf("failed to get issue: %w", err)
+	}
+	return issue.GetHTMLURL(), nil
 }
