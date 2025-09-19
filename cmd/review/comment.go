@@ -1,4 +1,4 @@
-package cmd
+package review
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/spf13/cobra"
-	"github.com/srz-zumix/gh-commentator/commentator"
+	"github.com/srz-zumix/gh-commentator/reviewer"
 	"github.com/srz-zumix/go-gh-extension/pkg/parser"
 )
 
@@ -17,17 +17,18 @@ type ToOptions struct {
 func NewCommentCmd() *cobra.Command {
 	opts := &ToOptions{}
 	var repo string
-	var name string
 	var body string
 	var bodyFile string
 	var dryrun bool
 	var group string
+	var path string
+	var commentOpts reviewer.CommentOption
 	cmd := &cobra.Command{
 		Use:     "comment <target>",
 		Aliases: []string{"c"},
 		Args:    cobra.MinimumNArgs(1),
-		Short:   "Post a comment to the target (issue or pull request)",
-		Long:    `Post a comment to the target (issue or pull request).`,
+		Short:   "Post a review comment to the pull request",
+		Long:    `Post a review comment to the pull request.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if body == "" && bodyFile == "" {
 				return fmt.Errorf("either --body or --body-file must be specified")
@@ -40,9 +41,9 @@ func NewCommentCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to resolve repository: %w", err)
 			}
-			c, err := commentator.NewGitHubCommentator(repository, target)
+			r, err := reviewer.NewGitHubReviewer(repository, target)
 			if err != nil {
-				return fmt.Errorf("failed to create commentator: %w", err)
+				return fmt.Errorf("failed to create reviewer: %w", err)
 			}
 			if bodyFile != "" {
 				if bodyFile == "-" {
@@ -55,19 +56,19 @@ func NewCommentCmd() *cobra.Command {
 				body = string(data)
 			}
 
-			meta := c.CreateMetaData("", 0, group)
+			meta := r.CreateMetaData("", 0, group)
 			if dryrun {
-				url, err := c.GetTargetURL()
+				url, err := r.GetTargetURL()
 				if err != nil {
 					return fmt.Errorf("failed to get target URL: %w", err)
 				}
-				fmt.Printf("Dry run: would post comment to %s\n", url)
+				fmt.Printf("Dry run: would post comment to %s on %s\n", url, path)
 				fmt.Println("-----")
 				fmt.Println(body)
 				fmt.Println("-----")
 				fmt.Printf("MetaData: %s\n", meta.ToHTML())
 			} else {
-				url, err := c.Comment(body, name, meta)
+				url, err := r.Comment(body, path, meta, &commentOpts)
 				if err != nil {
 					return fmt.Errorf("failed to post comment: %w", err)
 				}
@@ -79,14 +80,13 @@ func NewCommentCmd() *cobra.Command {
 	f := cmd.Flags()
 	f.StringVarP(&body, "body", "b", "", "comment body")
 	f.StringVarP(&bodyFile, "body-file", "F", "", "comment body file")
+	f.StringVarP(&path, "path", "p", "", "file path to comment on")
 	f.BoolVarP(&dryrun, "dryrun", "n", false, "Dry run: do not actually set labels")
 	f.StringVarP(&group, "group", "g", "gh-commentator", "comment group")
-	f.StringVar(&name, "name", "", "comment author name")
+	f.BoolVar(&commentOpts.Update, "update", false, "update the last comment")
+	f.BoolVar(&commentOpts.Resolve, "resolve", false, "resolve previous review comments in the same group")
+	f.BoolVar(&commentOpts.Delete, "delete", false, "delete previous comments in the same group")
 	f.StringVarP(&repo, "repo", "R", "", "Repository in the format 'owner/repo'")
 	cmdutil.AddFormatFlags(cmd, &opts.Exporter)
 	return cmd
-}
-
-func init() {
-	rootCmd.AddCommand(NewCommentCmd())
 }
