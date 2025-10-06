@@ -2,7 +2,7 @@ module github.com/srz-zumix/gh-commentator
 
 go 1.24.2
 
-require github.com/srz-zumix/go-gh-extension v0.1.14
+require github.com/srz-zumix/go-gh-extension v0.1.16
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
