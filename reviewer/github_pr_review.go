@@ -14,7 +14,7 @@ type GitHubReviewer struct {
 	client     *gh.GitHubClient
 	ctx        context.Context
 	Repository repository.Repository
-	Target     any
+	Target     *github.PullRequest
 }
 
 type Comment struct {
@@ -64,17 +64,21 @@ func (c Comments) GetAllComments() []any {
 	return result
 }
 
-func NewGitHubReviewer(repo repository.Repository, target any) (*GitHubReviewer, error) {
+func NewGitHubReviewer(repo repository.Repository, target string) (*GitHubReviewer, error) {
 	client, err := gh.NewGitHubClientWithRepo(repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 	ctx := context.Background()
+	pr, err := gh.FindPRByIdentifier(ctx, client, repo, target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find pull request %s: %w", target, err)
+	}
 	return &GitHubReviewer{
 		client:     client,
 		ctx:        ctx,
 		Repository: repo,
-		Target:     target,
+		Target:     pr,
 	}, nil
 }
 

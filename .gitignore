@@ -24,8 +24,8 @@ go.work.sum
 # env file
 .env
 
-/gh-commentator
-/gh-commentator.exe
+/gh-comment-kit
+/gh-comment-kit.exe
 
 # temp
 [Tt]emp/

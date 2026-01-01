@@ -26,7 +26,7 @@ func NewListCmd() *cobra.Command {
 		Long:    `List comments for the target (issue or pull request).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			target := args[0]
-			repository, err := parser.Repository(parser.RepositoryInput(repo))
+			repository, err := parser.Repository(parser.RepositoryInput(repo), parser.RepositoryFromURL(target))
 			if err != nil {
 				return fmt.Errorf("failed to resolve repository: %w", err)
 			}
@@ -36,7 +36,12 @@ func NewListCmd() *cobra.Command {
 			}
 			ctx := context.Background()
 
-			comments, err := gh.ListIssueComments(ctx, client, repository, target)
+			// Get issue
+			issue, err := gh.FindIssueByIdentifier(ctx, client, repository, target)
+			if err != nil {
+				return fmt.Errorf("failed to get issue %s: %w", target, err)
+			}
+			comments, err := gh.ListIssueComments(ctx, client, repository, issue.GetNumber())
 			if err != nil {
 				return fmt.Errorf("failed to list comments: %w", err)
 			}
