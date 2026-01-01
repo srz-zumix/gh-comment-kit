@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/srz-zumix/gh-commentator/version"
+	"github.com/srz-zumix/gh-comment-kit/version"
 	"github.com/srz-zumix/go-gh-extension/pkg/actions"
 )
 

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/srz-zumix/gh-commentator/cmd/review"
+	"github.com/srz-zumix/gh-comment-kit/cmd/review"
 )
 
 func NewReviewCmd() *cobra.Command {
