@@ -25,7 +25,7 @@ func CreateMetaData(source any, index int, group string, url string) MetaData {
 }
 
 func ParseMetaData(commentBody string) (*MetaData, string, error) {
-	const marker = "<!--gh-commentator "
+	const marker = "<!--gh-comment-kit "
 	start := strings.Index(commentBody, marker)
 	if start == -1 {
 		return nil, commentBody, fmt.Errorf("no meta data found")
@@ -37,7 +37,7 @@ func ParseMetaData(commentBody string) (*MetaData, string, error) {
 	}
 	jsonStr := commentBody[start+len(marker) : start+end]
 	body := commentBody[:start]
-	body += commentBody[end+len(endMarker):]
+	body += commentBody[start+end+len(endMarker):]
 	var meta MetaData
 	if err := json.Unmarshal([]byte(jsonStr), &meta); err != nil {
 		return nil, body, err
@@ -47,5 +47,5 @@ func ParseMetaData(commentBody string) (*MetaData, string, error) {
 
 func (m MetaData) ToHTML() string {
 	jsonStr, _ := json.Marshal(m)
-	return fmt.Sprintf("<!--gh-commentator %s -->", jsonStr)
+	return fmt.Sprintf("<!--gh-comment-kit %s -->", jsonStr)
 }

@@ -29,6 +29,14 @@ type CommentOption struct {
 	Delete  bool
 }
 
+type CommentTarget struct {
+	Path      *string
+	Line      *int
+	StartLine *int
+	Side      *string
+	CommitSHA *string
+}
+
 type Comments []*Comment
 
 func (c Comments) GetReviewComments() []*github.PullRequestComment {
@@ -98,7 +106,7 @@ func (g *GitHubReviewer) CreateMetaData(source any, index int, group string) Met
 	return CreateMetaData(source, index, group, url)
 }
 
-func (g *GitHubReviewer) Comment(body string, path string, meta MetaData, opt *CommentOption) (string, error) {
+func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaData, opt *CommentOption) (string, error) {
 	comments, err := g.ListComments(meta)
 	if err != nil {
 		return "", fmt.Errorf("failed to list comments: %w", err)
@@ -131,22 +139,16 @@ func (g *GitHubReviewer) Comment(body string, path string, meta MetaData, opt *C
 	if opt != nil && opt.Update && last != nil {
 		return g.editComment(last, commentBody)
 	}
-	return g.createComment(commentBody, path)
+	return g.createComment(commentBody, target)
 }
 
-func (g *GitHubReviewer) createComment(commentBody string, path string) (string, error) {
-	if path != "" {
-		pr, err := gh.GetPullRequest(g.ctx, g.client, g.Repository, g.Target)
-		if err != nil {
-			return "", fmt.Errorf("failed to get pull request: %w", err)
-		}
-		comment := &github.PullRequestComment{
-			Body:        &commentBody,
-			Path:        &path,
-			SubjectType: github.Ptr("file"),
-			CommitID:    pr.Head.SHA,
-		}
-		c, err := gh.CreatePullRequestComment(g.ctx, g.client, g.Repository, g.Target, comment)
+func (g *GitHubReviewer) createComment(commentBody string, target *CommentTarget) (string, error) {
+	prComment, err := g.createPullRequestComment(commentBody, target)
+	if err != nil {
+		return "", fmt.Errorf("failed to create pull request comment object: %w", err)
+	}
+	if prComment != nil {
+		c, err := gh.CreatePullRequestComment(g.ctx, g.client, g.Repository, g.Target, prComment)
 		if err != nil {
 			return "", fmt.Errorf("failed to create comment: %w", err)
 		}
@@ -158,6 +160,36 @@ func (g *GitHubReviewer) createComment(commentBody string, path string) (string,
 		}
 		return c.GetHTMLURL(), nil
 	}
+}
+
+func (g *GitHubReviewer) createPullRequestComment(body string, target *CommentTarget) (*github.PullRequestComment, error) {
+	if target == nil {
+		return nil, nil
+	}
+	commitID := g.Target.GetHead().GetSHA()
+	if target.CommitSHA != nil && *target.CommitSHA != "" {
+		commitID = *target.CommitSHA
+	}
+	if target.Path != nil && *target.Path != "" {
+		if target.Line != nil && *target.Line > 0 {
+			return &github.PullRequestComment{
+				Body:        &body,
+				Path:        target.Path,
+				Line:        target.Line,
+				StartLine:   target.StartLine,
+				Side:        target.Side,
+				SubjectType: github.Ptr("line"),
+				CommitID:    &commitID,
+			}, nil
+		}
+		return &github.PullRequestComment{
+			Body:        &body,
+			Path:        target.Path,
+			SubjectType: github.Ptr("file"),
+			CommitID:    &commitID,
+		}, nil
+	}
+	return nil, nil
 }
 
 func (g *GitHubReviewer) editComment(comment *Comment, body string) (string, error) {
