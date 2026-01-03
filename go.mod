@@ -2,7 +2,7 @@ module github.com/srz-zumix/gh-comment-kit
 
 go 1.25.4
 
-require github.com/srz-zumix/go-gh-extension v0.2.6
+require github.com/srz-zumix/go-gh-extension v0.2.8
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
@@ -81,5 +81,5 @@ require (
 	github.com/cli/cli/v2 v2.83.1
 	github.com/cli/go-gh/v2 v2.13.0
 	github.com/google/go-github/v79 v79.0.0
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 )

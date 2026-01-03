@@ -22,6 +22,7 @@ func NewCommentCmd() *cobra.Command {
 	var dryrun bool
 	var group string
 	var path string
+	var line int
 	var commentOpts reviewer.CommentOption
 	cmd := &cobra.Command{
 		Use:     "comment <target>",
@@ -65,6 +66,9 @@ func NewCommentCmd() *cobra.Command {
 				target := &reviewer.CommentTarget{
 					Path: &path,
 				}
+				if line > 0 {
+					target.Line = &line
+				}
 				url, err := r.Comment(body, target, meta, &commentOpts)
 				if err != nil {
 					return fmt.Errorf("failed to post comment: %w", err)
@@ -79,6 +83,7 @@ func NewCommentCmd() *cobra.Command {
 	f.StringVarP(&bodyFile, "body-file", "F", "", "comment body file")
 	cmd.MarkFlagsMutuallyExclusive("body", "body-file")
 	f.StringVarP(&path, "path", "p", "", "file path to comment on")
+	f.IntVarP(&line, "line", "l", 0, "line number to comment on")
 	f.BoolVarP(&dryrun, "dryrun", "n", false, "Dry run: do not actually set labels")
 	f.StringVarP(&group, "group", "g", "gh-comment-kit", "comment group")
 	f.BoolVar(&commentOpts.Update, "update", false, "update the last comment")
