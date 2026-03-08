@@ -3,6 +3,7 @@ package reviewer
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestSplitComment_NoSplitNeeded(t *testing.T) {
@@ -81,8 +82,9 @@ func TestSplitComment_AllPartsWithinLimit(t *testing.T) {
 	parts := splitComment(body, maxSize)
 
 	for i, part := range parts {
-		if len(part) > maxSize {
-			t.Errorf("Part %d exceeds maxSize: %d > %d", i, len(part), maxSize)
+		runeCount := utf8.RuneCountInString(part)
+		if runeCount > maxSize {
+			t.Errorf("Part %d exceeds maxSize: %d > %d", i, runeCount, maxSize)
 		}
 	}
 }
@@ -92,8 +94,9 @@ func TestFindSplitPoint_TextShorterThanMax(t *testing.T) {
 	maxSize := 100
 	point := findSplitPoint(text, maxSize)
 
-	if point != len(text) {
-		t.Errorf("Expected %d, got %d", len(text), point)
+	expectedRuneCount := utf8.RuneCountInString(text)
+	if point != expectedRuneCount {
+		t.Errorf("Expected %d, got %d", expectedRuneCount, point)
 	}
 }
 
@@ -204,8 +207,9 @@ func TestTruncateComment_WithTruncation(t *testing.T) {
 	maxSize := 50
 	result := truncateComment(body, maxSize)
 
-	if len(result) > maxSize {
-		t.Errorf("Truncated comment exceeds maxSize: %d > %d", len(result), maxSize)
+	runeCount := utf8.RuneCountInString(result)
+	if runeCount > maxSize {
+		t.Errorf("Truncated comment exceeds maxSize: %d > %d", runeCount, maxSize)
 	}
 
 	if !strings.HasSuffix(result, "... (truncated)") {
@@ -221,8 +225,9 @@ func TestTruncateComment_AtParagraphBoundary(t *testing.T) {
 
 	result := truncateComment(body, maxSize)
 
-	if len(result) > maxSize {
-		t.Errorf("Truncated comment exceeds maxSize: %d > %d", len(result), maxSize)
+	runeCount := utf8.RuneCountInString(result)
+	if runeCount > maxSize {
+		t.Errorf("Truncated comment exceeds maxSize: %d > %d", runeCount, maxSize)
 	}
 
 	// Should truncate at paragraph boundary
@@ -240,8 +245,9 @@ func TestTruncateComment_VerySmallMaxSize(t *testing.T) {
 	maxSize := 5
 	result := truncateComment(body, maxSize)
 
-	if len(result) > maxSize {
-		t.Errorf("Truncated comment exceeds maxSize: %d > %d", len(result), maxSize)
+	runeCount := utf8.RuneCountInString(result)
+	if runeCount > maxSize {
+		t.Errorf("Truncated comment exceeds maxSize: %d > %d", runeCount, maxSize)
 	}
 }
 
@@ -256,5 +262,130 @@ func TestTruncateComment_PreservesBeginning(t *testing.T) {
 
 	if strings.Contains(result, strings.Repeat("x", 50)) {
 		t.Errorf("Should have truncated the repeated content: %q", result)
+	}
+}
+
+// Test UTF-8 multibyte character handling
+func TestSplitComment_UTF8Multibyte(t *testing.T) {
+	// Japanese characters (3 bytes each in UTF-8)
+	body := strings.Repeat("あ", 50) + "\n\n" + strings.Repeat("い", 50)
+	maxSize := 60 // 60 characters (runes), not bytes
+
+	parts := splitComment(body, maxSize)
+
+	// Verify all parts are valid UTF-8
+	for i, part := range parts {
+		if !utf8.ValidString(part) {
+			t.Errorf("Part %d contains invalid UTF-8", i)
+		}
+		runeCount := utf8.RuneCountInString(part)
+		if runeCount > maxSize {
+			t.Errorf("Part %d exceeds maxSize in runes: %d > %d", i, runeCount, maxSize)
+		}
+	}
+
+	if len(parts) != 2 {
+		t.Errorf("Expected 2 parts, got %d", len(parts))
+	}
+}
+
+func TestTruncateComment_UTF8Multibyte(t *testing.T) {
+	// Mix of ASCII and multibyte characters
+	body := "Test: " + strings.Repeat("日本語", 50) // "日本語" = 3 characters
+	maxSize := 50
+
+	result := truncateComment(body, maxSize)
+
+	// Verify result is valid UTF-8
+	if !utf8.ValidString(result) {
+		t.Errorf("Result contains invalid UTF-8: %q", result)
+	}
+
+	runeCount := utf8.RuneCountInString(result)
+	if runeCount > maxSize {
+		t.Errorf("Truncated comment exceeds maxSize: %d > %d", runeCount, maxSize)
+	}
+
+	if !strings.Contains(result, "Test:") {
+		t.Errorf("Should preserve the beginning: %q", result)
+	}
+}
+
+func TestFindSplitPoint_UTF8SafeBoundary(t *testing.T) {
+	// Emoji (4 bytes in UTF-8) + Japanese (3 bytes each)
+	text := strings.Repeat("🎉", 30) + "\n\n" + strings.Repeat("テスト", 30)
+	maxSize := 40
+
+	point := findSplitPoint(text, maxSize)
+
+	// Verify that slicing at the split point produces valid UTF-8
+	byteIndex := 0
+	for i := 0; i < point; i++ {
+		_, size := utf8.DecodeRuneInString(text[byteIndex:])
+		byteIndex += size
+	}
+
+	firstPart := text[:byteIndex]
+	if !utf8.ValidString(firstPart) {
+		t.Errorf("Split produces invalid UTF-8: %q", firstPart)
+	}
+
+	if point > maxSize {
+		t.Errorf("Split point %d exceeds maxSize %d", point, maxSize)
+	}
+}
+
+// Test invalid maxSize (zero or negative)
+func TestSplitComment_InvalidMaxSize(t *testing.T) {
+	body := "Test comment body"
+
+	// Test with zero maxSize
+	parts := splitComment(body, 0)
+	if len(parts) != 1 {
+		t.Errorf("Expected 1 part with maxSize=0, got %d", len(parts))
+	}
+	if parts[0] != body {
+		t.Errorf("Expected body to be returned as-is with maxSize=0, got %q", parts[0])
+	}
+
+	// Test with negative maxSize
+	parts = splitComment(body, -10)
+	if len(parts) != 1 {
+		t.Errorf("Expected 1 part with negative maxSize, got %d", len(parts))
+	}
+	if parts[0] != body {
+		t.Errorf("Expected body to be returned as-is with negative maxSize, got %q", parts[0])
+	}
+}
+
+func TestFindSplitPoint_InvalidMaxSize(t *testing.T) {
+	text := "Test text"
+
+	// Test with zero maxSize
+	point := findSplitPoint(text, 0)
+	if point != 0 {
+		t.Errorf("Expected 0 with maxSize=0, got %d", point)
+	}
+
+	// Test with negative maxSize
+	point = findSplitPoint(text, -5)
+	if point != 0 {
+		t.Errorf("Expected 0 with negative maxSize, got %d", point)
+	}
+}
+
+func TestTruncateComment_InvalidMaxSize(t *testing.T) {
+	body := "Test comment body"
+
+	// Test with zero maxSize
+	result := truncateComment(body, 0)
+	if result != "" {
+		t.Errorf("Expected empty string with maxSize=0, got %q", result)
+	}
+
+	// Test with negative maxSize
+	result = truncateComment(body, -10)
+	if result != "" {
+		t.Errorf("Expected empty string with negative maxSize, got %q", result)
 	}
 }

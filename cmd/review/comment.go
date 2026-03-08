@@ -2,6 +2,7 @@ package review
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/cli/cli/v2/pkg/cmdutil"
@@ -41,12 +42,17 @@ func NewCommentCmd() *cobra.Command {
 				return fmt.Errorf("failed to create reviewer: %w", err)
 			}
 			if bodyFile != "" {
+				var data []byte
 				if bodyFile == "-" {
-					bodyFile = "/dev/stdin"
-				}
-				data, err := os.ReadFile(bodyFile)
-				if err != nil {
-					return fmt.Errorf("failed to read body file: %w", err)
+					data, err = io.ReadAll(os.Stdin)
+					if err != nil {
+						return fmt.Errorf("failed to read body from stdin: %w", err)
+					}
+				} else {
+					data, err = os.ReadFile(bodyFile)
+					if err != nil {
+						return fmt.Errorf("failed to read body file: %w", err)
+					}
 				}
 				body = string(data)
 			}

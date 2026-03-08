@@ -3,6 +3,7 @@ package reviewer
 import (
 	"context"
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/google/go-github/v79/github"
@@ -145,15 +146,17 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 
 	// Check if body needs to be split or truncated
 	metaHTML := meta.ToHTML()
-	maxBodySize := maxCommentSize - len(metaHTML)
+	metaRuneCount := utf8.RuneCountInString(metaHTML)
+	maxBodySize := maxCommentSize - metaRuneCount
 
 	// Guard: ensure metadata doesn't exceed max comment size
 	if maxBodySize <= 0 {
-		return "", fmt.Errorf("metadata is too large (%d bytes), exceeds max comment size (%d bytes)", len(metaHTML), maxCommentSize)
+		return "", fmt.Errorf("metadata is too large (%d characters), exceeds max comment size (%d characters)", metaRuneCount, maxCommentSize)
 	}
 
 	// If truncate option is enabled, truncate instead of splitting
-	if opt != nil && opt.Truncate && len(body) > maxBodySize {
+	bodyRuneCount := utf8.RuneCountInString(body)
+	if opt != nil && opt.Truncate && bodyRuneCount > maxBodySize {
 		body = truncateComment(body, maxBodySize)
 	}
 
@@ -274,7 +277,10 @@ func (g *GitHubReviewer) ListReviewComments(meta MetaData) (Comments, error) {
 	}
 	var result Comments
 	for _, c := range comments {
-		m, err := g.extractMetaData(c.GetBody(), meta)
+		if c.Body == nil {
+			continue
+		}
+		m, err := g.extractMetaData(*c.Body, meta)
 		if err != nil {
 			continue
 		}
@@ -294,7 +300,10 @@ func (g *GitHubReviewer) ListPullRequestComments(meta MetaData) (Comments, error
 
 	var result Comments
 	for _, c := range comments {
-		m, err := g.extractMetaData(c.GetBody(), meta)
+		if c.Body == nil {
+			continue
+		}
+		m, err := g.extractMetaData(*c.Body, meta)
 		if err != nil {
 			continue
 		}
@@ -315,6 +324,11 @@ func (g *GitHubReviewer) extractMetaData(commentBody string, meta MetaData) (*Me
 	// This is useful to find comments across all groups.
 	if meta.Group != "" && m.Group != meta.Group {
 		return nil, fmt.Errorf("comment does not belong to group %q", meta.Group)
+	}
+	// If meta.Hash is empty, we accept all hashes.
+	// If set, only match comments generated from the same source.
+	if meta.Hash != "" && m.Hash != meta.Hash {
+		return nil, fmt.Errorf("comment does not match hash %q", meta.Hash)
 	}
 	return m, nil
 }
