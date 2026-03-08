@@ -147,6 +147,11 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 	metaHTML := meta.ToHTML()
 	maxBodySize := maxCommentSize - len(metaHTML)
 
+	// Guard: ensure metadata doesn't exceed max comment size
+	if maxBodySize <= 0 {
+		return "", fmt.Errorf("metadata is too large (%d bytes), exceeds max comment size (%d bytes)", len(metaHTML), maxCommentSize)
+	}
+
 	// If truncate option is enabled, truncate instead of splitting
 	if opt != nil && opt.Truncate && len(body) > maxBodySize {
 		body = truncateComment(body, maxBodySize)
@@ -269,7 +274,7 @@ func (g *GitHubReviewer) ListReviewComments(meta MetaData) (Comments, error) {
 	}
 	var result Comments
 	for _, c := range comments {
-		m, err := g.extractMetaData(*c.Body, meta)
+		m, err := g.extractMetaData(c.GetBody(), meta)
 		if err != nil {
 			continue
 		}
@@ -289,7 +294,7 @@ func (g *GitHubReviewer) ListPullRequestComments(meta MetaData) (Comments, error
 
 	var result Comments
 	for _, c := range comments {
-		m, err := g.extractMetaData(*c.Body, meta)
+		m, err := g.extractMetaData(c.GetBody(), meta)
 		if err != nil {
 			continue
 		}
@@ -347,8 +352,9 @@ func (g *GitHubReviewer) createSplitComments(parts []string, target *CommentTarg
 	var firstCommentURL string
 
 	// Delete old split comments if updating
-	if opt != nil && opt.Update {
-		oldSplitComments, err := g.findSplitComments(meta)
+	if opt != nil && opt.Update && last != nil {
+		// Only delete split comments from the same batch (matching Index)
+		oldSplitComments, err := g.findSplitCommentsByIndex(meta, last.MetaData.Index)
 		if err != nil {
 			return "", fmt.Errorf("failed to find old split comments: %w", err)
 		}
@@ -384,7 +390,10 @@ func (g *GitHubReviewer) createSplitComments(parts []string, target *CommentTarg
 	return firstCommentURL, nil
 }
 
-func (g *GitHubReviewer) findSplitComments(meta MetaData) (Comments, error) {
+// findSplitCommentsByIndex finds split comments with a specific Index.
+// This ensures we only target comments from a specific batch, avoiding
+// unintended deletion/updates of other split comment sequences in the same group.
+func (g *GitHubReviewer) findSplitCommentsByIndex(meta MetaData, targetIndex int) (Comments, error) {
 	comments, err := g.ListComments(meta)
 	if err != nil {
 		return nil, err
@@ -392,7 +401,7 @@ func (g *GitHubReviewer) findSplitComments(meta MetaData) (Comments, error) {
 
 	var splitComments Comments
 	for _, c := range comments {
-		if c.MetaData.TotalParts > 0 {
+		if c.MetaData.TotalParts > 0 && c.MetaData.Index == targetIndex {
 			splitComments = append(splitComments, c)
 		}
 	}
