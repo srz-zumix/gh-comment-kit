@@ -144,14 +144,20 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 		}
 	}
 
-	// Check if body needs to be split or truncated
+	// Check if body needs to be split or truncated.
+	// Reserve budget for worst-case metadata: TotalParts/PartNumber fields are added during
+	// splitting, and a "\n" separator is always appended between body and metadata.
+	// Using sentinel values for TotalParts/PartNumber ensures the budget is conservative.
 	metaHTML := meta.ToHTML()
-	metaRuneCount := utf8.RuneCountInString(metaHTML)
-	maxBodySize := maxCommentSize - metaRuneCount
+	worstMeta := meta
+	worstMeta.TotalParts = 99999
+	worstMeta.PartNumber = 99999
+	worstMetaRuneCount := utf8.RuneCountInString(worstMeta.ToHTML()) + 1 // +1 for "\n" separator
+	maxBodySize := maxCommentSize - worstMetaRuneCount
 
 	// Guard: ensure metadata doesn't exceed max comment size
 	if maxBodySize <= 0 {
-		return "", fmt.Errorf("metadata is too large (%d characters), exceeds max comment size (%d characters)", metaRuneCount, maxCommentSize)
+		return "", fmt.Errorf("metadata is too large (%d characters), exceeds max comment size (%d characters)", utf8.RuneCountInString(metaHTML), maxCommentSize)
 	}
 
 	// If truncate option is enabled, truncate instead of splitting
