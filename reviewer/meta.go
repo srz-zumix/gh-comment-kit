@@ -8,10 +8,12 @@ import (
 )
 
 type MetaData struct {
-	Hash  string `json:"hash"`
-	URL   string `json:"url,omitempty"`
-	Index int    `json:"index"`
-	Group string `json:"group"`
+	Hash       string `json:"hash"`
+	URL        string `json:"url,omitempty"`
+	Index      int    `json:"index"`
+	Group      string `json:"group"`
+	TotalParts int    `json:"total_parts,omitempty"`
+	PartNumber int    `json:"part_number,omitempty"`
 }
 
 func CreateMetaData(source any, index int, group string, url string) MetaData {

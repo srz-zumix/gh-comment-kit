@@ -89,6 +89,7 @@ func NewCommentCmd() *cobra.Command {
 	f.BoolVar(&commentOpts.Update, "update", false, "update the last comment")
 	f.BoolVar(&commentOpts.Resolve, "resolve", false, "resolve previous review comments in the same group")
 	f.BoolVar(&commentOpts.Delete, "delete", false, "delete previous comments in the same group")
+	f.BoolVar(&commentOpts.Truncate, "truncate", false, "truncate comment if it exceeds size limit instead of splitting")
 	f.StringVarP(&repo, "repo", "R", "", "Repository in the format 'owner/repo'")
 	cmdutil.AddFormatFlags(cmd, &opts.Exporter)
 	return cmd

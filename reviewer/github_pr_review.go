@@ -10,6 +10,12 @@ import (
 	"github.com/srz-zumix/go-gh-extension/pkg/gh"
 )
 
+const (
+	// GitHub comment max size is 65536 characters
+	// Reserve space for metadata HTML
+	maxCommentSize = 65000
+)
+
 type GitHubReviewer struct {
 	client     *gh.GitHubClient
 	ctx        context.Context
@@ -24,9 +30,10 @@ type Comment struct {
 }
 
 type CommentOption struct {
-	Update  bool
-	Resolve bool
-	Delete  bool
+	Update   bool
+	Resolve  bool
+	Delete   bool
+	Truncate bool
 }
 
 type CommentTarget struct {
@@ -116,6 +123,7 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 		meta.Index = last.MetaData.Index + 1
 	}
 
+	// Handle delete and resolve options for existing comments
 	if opt != nil {
 		for _, c := range comments {
 			if opt.Update && c == last {
@@ -135,11 +143,28 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 		}
 	}
 
-	commentBody := body + "\n" + meta.ToHTML()
-	if opt != nil && opt.Update && last != nil {
-		return g.editComment(last, commentBody)
+	// Check if body needs to be split or truncated
+	metaHTML := meta.ToHTML()
+	maxBodySize := maxCommentSize - len(metaHTML)
+
+	// If truncate option is enabled, truncate instead of splitting
+	if opt != nil && opt.Truncate && len(body) > maxBodySize {
+		body = truncateComment(body, maxBodySize)
 	}
-	return g.createComment(commentBody, target)
+
+	parts := splitComment(body, maxBodySize)
+
+	if len(parts) == 1 {
+		// Single comment (no split needed)
+		commentBody := body + "\n" + metaHTML
+		if opt != nil && opt.Update && last != nil {
+			return g.editComment(last, commentBody)
+		}
+		return g.createComment(commentBody, target)
+	}
+
+	// Multiple parts - create split comments
+	return g.createSplitComments(parts, target, meta, opt, last)
 }
 
 func (g *GitHubReviewer) createComment(commentBody string, target *CommentTarget) (string, error) {
@@ -315,4 +340,61 @@ func (g *GitHubReviewer) GetTargetURL() (string, error) {
 		return "", fmt.Errorf("failed to get issue: %w", err)
 	}
 	return issue.GetHTMLURL(), nil
+}
+
+func (g *GitHubReviewer) createSplitComments(parts []string, target *CommentTarget, meta MetaData, opt *CommentOption, last *Comment) (string, error) {
+	totalParts := len(parts)
+	var firstCommentURL string
+
+	// Delete old split comments if updating
+	if opt != nil && opt.Update {
+		oldSplitComments, err := g.findSplitComments(meta)
+		if err != nil {
+			return "", fmt.Errorf("failed to find old split comments: %w", err)
+		}
+		for _, c := range oldSplitComments {
+			if err := g.DeleteComment(c); err != nil {
+				return "", fmt.Errorf("failed to delete old split comment: %w", err)
+			}
+		}
+	}
+
+	// Create first comment (PR Review Comment if target specified)
+	meta.TotalParts = totalParts
+	meta.PartNumber = 1
+	firstBody := parts[0] + "\n" + meta.ToHTML()
+	url, err := g.createComment(firstBody, target)
+	if err != nil {
+		return "", fmt.Errorf("failed to create first part comment: %w", err)
+	}
+	firstCommentURL = url
+
+	// Create subsequent parts as issue comments (replies)
+	for i := 1; i < totalParts; i++ {
+		meta.PartNumber = i + 1
+		partBody := parts[i] + "\n" + meta.ToHTML()
+
+		// Reply as issue comment
+		_, err := gh.CreateIssueComment(g.ctx, g.client, g.Repository, g.Target, partBody)
+		if err != nil {
+			return "", fmt.Errorf("failed to create part %d/%d comment: %w", i+1, totalParts, err)
+		}
+	}
+
+	return firstCommentURL, nil
+}
+
+func (g *GitHubReviewer) findSplitComments(meta MetaData) (Comments, error) {
+	comments, err := g.ListComments(meta)
+	if err != nil {
+		return nil, err
+	}
+
+	var splitComments Comments
+	for _, c := range comments {
+		if c.MetaData.TotalParts > 0 {
+			splitComments = append(splitComments, c)
+		}
+	}
+	return splitComments, nil
 }
