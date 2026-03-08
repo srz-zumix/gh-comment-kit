@@ -84,7 +84,7 @@ func NewCommentCmd() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("body", "body-file")
 	f.StringVarP(&path, "path", "p", "", "file path to comment on")
 	f.IntVarP(&line, "line", "l", 0, "line number to comment on")
-	f.BoolVarP(&dryrun, "dryrun", "n", false, "Dry run: do not actually set labels")
+	f.BoolVarP(&dryrun, "dryrun", "n", false, "Dry run: do not post comment, just print what would be sent")
 	f.StringVarP(&group, "group", "g", "gh-comment-kit", "comment group")
 	f.BoolVar(&commentOpts.Update, "update", false, "update the last comment")
 	f.BoolVar(&commentOpts.Resolve, "resolve", false, "resolve previous review comments in the same group")
