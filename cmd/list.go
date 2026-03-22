@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/cli/cli/v2/pkg/cmdutil"
@@ -34,8 +33,8 @@ func NewListCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to create GitHub client: %w", err)
 			}
-			ctx := context.Background()
 
+			ctx := cmd.Context()
 			// Get issue
 			issue, err := gh.FindIssueByIdentifier(ctx, client, repository, target)
 			if err != nil {
@@ -47,8 +46,7 @@ func NewListCmd() *cobra.Command {
 			}
 
 			renderer := render.NewRenderer(opts.Exporter)
-			renderer.RenderCommentDefault(comments)
-			return nil
+			return renderer.RenderCommentDefault(comments)
 		},
 	}
 	f := cmd.Flags()
