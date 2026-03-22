@@ -37,7 +37,7 @@ func NewCommentCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to resolve repository: %w", err)
 			}
-			r, err := reviewer.NewGitHubReviewer(repository, target)
+			r, err := reviewer.NewGitHubReviewer(cmd.Context(), repository, target)
 			if err != nil {
 				return fmt.Errorf("failed to create reviewer: %w", err)
 			}

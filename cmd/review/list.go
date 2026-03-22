@@ -30,7 +30,7 @@ func NewListCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to resolve repository: %w", err)
 			}
-			r, err := reviewer.NewGitHubReviewer(repository, target)
+			r, err := reviewer.NewGitHubReviewer(cmd.Context(), repository, target)
 			if err != nil {
 				return fmt.Errorf("failed to create reviewer: %w", err)
 			}
@@ -41,8 +41,7 @@ func NewListCmd() *cobra.Command {
 			}
 
 			renderer := render.NewRenderer(opts.Exporter)
-			renderer.RenderCommentDefault(comments.GetAllComments())
-			return nil
+			return renderer.RenderCommentDefault(comments.GetAllComments())
 		},
 	}
 	f := cmd.Flags()

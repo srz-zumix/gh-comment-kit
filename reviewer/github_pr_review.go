@@ -6,7 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/cli/go-gh/v2/pkg/repository"
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v84/github"
 	"github.com/srz-zumix/go-gh-extension/pkg/actions"
 	"github.com/srz-zumix/go-gh-extension/pkg/gh"
 )
@@ -80,12 +80,11 @@ func (c Comments) GetAllComments() []any {
 	return result
 }
 
-func NewGitHubReviewer(repo repository.Repository, target string) (*GitHubReviewer, error) {
+func NewGitHubReviewer(ctx context.Context, repo repository.Repository, target string) (*GitHubReviewer, error) {
 	client, err := gh.NewGitHubClientWithRepo(repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 	}
-	ctx := context.Background()
 	pr, err := gh.FindPRByIdentifier(ctx, client, repo, target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find pull request %s: %w", target, err)
