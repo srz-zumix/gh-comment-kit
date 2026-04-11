@@ -13,6 +13,7 @@ func NewReviewCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(review.NewCommentCmd())
+	cmd.AddCommand(review.NewHideCmd())
 	cmd.AddCommand(review.NewListCmd())
 
 	return cmd

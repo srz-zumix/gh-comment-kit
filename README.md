@@ -80,3 +80,21 @@ List comments that were posted with `gh comment-kit review comment` for the spec
 | `--group` | `-g` | `""` (all groups) | Filter by comment group identifier |
 | `--repo` | `-R` | (current repo) | Repository in the format `owner/repo` |
 | `--json` | | | Output as JSON with specified fields |
+
+#### Hide trackable comments on a pull request
+
+```sh
+gh comment-kit review hide <target> [--group <group>] [--reason <reason>] [--repo <owner/repo>]
+```
+
+Hide (minimize) pull request comments that contain gh-comment-kit metadata.
+`<target>` accepts a PR number, URL, or branch name.
+Use `--group` to target comments for a specific group; omit to match all groups.
+Review comments (inline) are hidden via the GraphQL `minimizeComment` mutation.
+Issue-level comments that cannot be resolved as threads are also hidden with the specified reason.
+
+| Flag | Short | Default | Description |
+| ---- | ----- | ------- | ----------- |
+| `--group` | `-g` | `"gh-comment-kit"` | Comment group identifier to target |
+| `--reason` | `-r` | `OUTDATED` | Reason for hiding: `ABUSE`, `DUPLICATE`, `OFF_TOPIC`, `OUTDATED`, `RESOLVED`, `SPAM` |
+| `--repo` | `-R` | (current repo) | Repository in the format `owner/repo` |
