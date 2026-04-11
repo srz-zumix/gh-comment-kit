@@ -48,7 +48,7 @@ Valid values: ABUSE, DUPLICATE, OFF_TOPIC, OUTDATED, RESOLVED, SPAM (default: OU
 		},
 	}
 	f := cmd.Flags()
-	f.StringVarP(&group, "group", "g", "", "comment group to hide")
+	f.StringVarP(&group, "group", "g", "gh-comment-kit", "comment group to hide")
 	cmdutil.StringEnumFlag(cmd, &reason, "reason", "r", gh.HideClassifierOutdated, gh.HideClassifiers, "reason for hiding")
 	f.StringVarP(&repo, "repo", "R", "", "Repository in the format 'owner/repo'")
 	return cmd
