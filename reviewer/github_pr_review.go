@@ -134,10 +134,18 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 				if err != nil {
 					return "", fmt.Errorf("failed to delete comment: %w", err)
 				}
-			} else if opt.Resolve && c.ReviewComment != nil {
-				err = gh.ResolvePullRequestComment(g.ctx, g.client, g.Repository, g.Target, c.ReviewComment)
-				if err != nil {
-					return "", fmt.Errorf("failed to resolve comment: %w", err)
+			} else if opt.Resolve {
+				if c.ReviewComment != nil {
+					err = gh.ResolvePullRequestComment(g.ctx, g.client, g.Repository, g.Target, c.ReviewComment)
+					if err != nil {
+						return "", fmt.Errorf("failed to resolve comment: %w", err)
+					}
+				} else {
+					// Issue comments cannot be resolved via thread; hide with RESOLVED reason instead.
+					err = g.HideComment(c, gh.HideClassifierResolved)
+					if err != nil {
+						return "", fmt.Errorf("failed to hide unresolvable comment: %w", err)
+					}
 				}
 			}
 		}
@@ -258,6 +266,22 @@ func (g *GitHubReviewer) DeleteComment(comment *Comment) error {
 		return gh.DeletePullRequestComment(g.ctx, g.client, g.Repository, comment.ReviewComment)
 	}
 	return fmt.Errorf("no comment to delete")
+}
+
+func (g *GitHubReviewer) HideComment(comment *Comment, classifier string) error {
+	if comment.Comment != nil {
+		if err := gh.HideComment(g.ctx, g.client, comment.Comment, classifier); err != nil {
+			return fmt.Errorf("failed to hide comment: %w", err)
+		}
+		return nil
+	}
+	if comment.ReviewComment != nil {
+		if err := gh.HideComment(g.ctx, g.client, comment.ReviewComment, classifier); err != nil {
+			return fmt.Errorf("failed to hide review comment: %w", err)
+		}
+		return nil
+	}
+	return fmt.Errorf("no comment to hide")
 }
 
 func (g *GitHubReviewer) ListComments(meta MetaData) (Comments, error) {
