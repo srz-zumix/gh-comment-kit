@@ -18,9 +18,10 @@ func NewHideCmd() *cobra.Command {
 		Use:     "hide <target>",
 		Aliases: []string{"h"},
 		Args:    cobra.MinimumNArgs(1),
-		Short:   "Hide comments for the pull request",
-		Long: `Hide (minimize) comments for the pull request that belong to the specified group.
+		Short:   "Hide gh-comment-kit comments on the pull request",
+		Long: `Hide (minimize) pull request comments that contain gh-comment-kit metadata.
 
+Use --group to hide comments for a specific group. If --group is omitted, comments from all groups are matched.
 The --reason flag sets the classifier used when hiding comments.
 Valid values: ABUSE, DUPLICATE, OFF_TOPIC, OUTDATED, RESOLVED, SPAM (default: OUTDATED).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
