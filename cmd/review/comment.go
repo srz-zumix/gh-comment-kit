@@ -8,6 +8,7 @@ import (
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/spf13/cobra"
 	"github.com/srz-zumix/gh-comment-kit/reviewer"
+	"github.com/srz-zumix/go-gh-extension/pkg/gh"
 	"github.com/srz-zumix/go-gh-extension/pkg/parser"
 )
 
@@ -95,6 +96,8 @@ func NewCommentCmd() *cobra.Command {
 	f.BoolVar(&commentOpts.Update, "update", false, "update the last comment")
 	f.BoolVar(&commentOpts.Resolve, "resolve", false, "resolve previous review comments in the same group")
 	f.BoolVar(&commentOpts.Delete, "delete", false, "delete previous comments in the same group")
+	f.BoolVar(&commentOpts.Hide, "hide", false, "hide previous comments in the same group")
+	cmdutil.StringEnumFlag(cmd, &commentOpts.HideReason, "hide-reason", "", gh.HideClassifierOutdated, gh.HideClassifiers, "reason for hiding (used with --hide)")
 	f.BoolVar(&commentOpts.Truncate, "truncate", false, "truncate comment if it exceeds size limit instead of splitting")
 	f.StringVarP(&repo, "repo", "R", "", "Repository in the format 'owner/repo'")
 	cmdutil.AddFormatFlags(cmd, &opts.Exporter)

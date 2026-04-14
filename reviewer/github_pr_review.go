@@ -31,10 +31,12 @@ type Comment struct {
 }
 
 type CommentOption struct {
-	Update   bool
-	Resolve  bool
-	Delete   bool
-	Truncate bool
+	Update     bool
+	Resolve    bool
+	Delete     bool
+	Truncate   bool
+	Hide       bool
+	HideReason string
 }
 
 type CommentTarget struct {
@@ -133,6 +135,15 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 				err = g.DeleteComment(c)
 				if err != nil {
 					return "", fmt.Errorf("failed to delete comment: %w", err)
+				}
+			} else if opt.Hide {
+				reason := opt.HideReason
+				if reason == "" {
+					reason = gh.HideClassifierOutdated
+				}
+				err = g.HideComment(c, reason)
+				if err != nil {
+					return "", fmt.Errorf("failed to hide comment: %w", err)
 				}
 			} else if opt.Resolve {
 				if c.ReviewComment != nil {
