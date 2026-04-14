@@ -97,6 +97,7 @@ func NewCommentCmd() *cobra.Command {
 	f.BoolVar(&commentOpts.Resolve, "resolve", false, "resolve previous review comments in the same group")
 	f.BoolVar(&commentOpts.Delete, "delete", false, "delete previous comments in the same group")
 	f.BoolVar(&commentOpts.Hide, "hide", false, "hide previous comments in the same group")
+	cmd.MarkFlagsMutuallyExclusive("update", "resolve", "delete", "hide")
 	cmdutil.StringEnumFlag(cmd, &commentOpts.HideReason, "hide-reason", "", gh.HideClassifierOutdated, gh.HideClassifiers, "reason for hiding (used with --hide)")
 	f.BoolVar(&commentOpts.Truncate, "truncate", false, "truncate comment if it exceeds size limit instead of splitting")
 	f.StringVarP(&repo, "repo", "R", "", "Repository in the format 'owner/repo'")
