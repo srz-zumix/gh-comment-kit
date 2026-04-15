@@ -25,6 +25,7 @@ func NewCommentCmd() *cobra.Command {
 	var group string
 	var path string
 	var line int
+	var hideReason string
 	var commentOpts reviewer.CommentOption
 	cmd := &cobra.Command{
 		Use:     "comment <target>",
@@ -33,6 +34,8 @@ func NewCommentCmd() *cobra.Command {
 		Short:   "Post a review comment to the pull request",
 		Long:    `Post a review comment to the pull request.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			commentOpts.Hide = cmd.Flags().Changed("hide")
+			commentOpts.HideReason = hideReason
 			target := args[0]
 			repository, err := parser.Repository(parser.RepositoryInput(repo), parser.RepositoryFromURL(target))
 			if err != nil {
@@ -96,9 +99,8 @@ func NewCommentCmd() *cobra.Command {
 	f.BoolVar(&commentOpts.Update, "update", false, "update the last comment")
 	f.BoolVar(&commentOpts.Resolve, "resolve", false, "resolve previous review comments in the same group")
 	f.BoolVar(&commentOpts.Delete, "delete", false, "delete previous comments in the same group")
-	f.BoolVar(&commentOpts.Hide, "hide", false, "hide previous comments in the same group")
+	cmdutil.StringEnumFlag(cmd, &hideReason, "hide", "", "", gh.HideClassifiers, "hide previous comments in the same group with the specified reason")
 	cmd.MarkFlagsMutuallyExclusive("update", "resolve", "delete", "hide")
-	cmdutil.StringEnumFlag(cmd, &commentOpts.HideReason, "hide-reason", "", gh.HideClassifierOutdated, gh.HideClassifiers, "reason for hiding (used with --hide)")
 	f.BoolVar(&commentOpts.Truncate, "truncate", false, "truncate comment if it exceeds size limit instead of splitting")
 	f.StringVarP(&repo, "repo", "R", "", "Repository in the format 'owner/repo'")
 	cmdutil.AddFormatFlags(cmd, &opts.Exporter)

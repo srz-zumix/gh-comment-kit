@@ -125,7 +125,7 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 		meta.Index = last.MetaData.Index + 1
 	}
 
-	// Handle delete and resolve options for existing comments
+	// Handle delete, hide, and resolve options for existing comments
 	if opt != nil {
 		for _, c := range comments {
 			if opt.Update && c == last {
