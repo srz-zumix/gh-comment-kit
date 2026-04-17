@@ -32,7 +32,10 @@ func NewCommentCmd() *cobra.Command {
 		Aliases: []string{"c"},
 		Args:    cobra.MinimumNArgs(1),
 		Short:   "Post a review comment to the pull request",
-		Long:    `Post a review comment to the pull request.`,
+		Long: `Post a review comment to the pull request.
+
+Use --update, --delete, --hide, or --resolve to manage previous comments in the same group before posting (mutually exclusive).
+--hide takes a classifier as its value: ABUSE, DUPLICATE, OFF_TOPIC, OUTDATED, RESOLVED, SPAM.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			commentOpts.Hide = cmd.Flags().Changed("hide")
 			commentOpts.HideReason = hideReason
