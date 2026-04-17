@@ -143,7 +143,7 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 				}
 				err = g.HideComment(c, reason)
 				if err != nil {
-					return "", fmt.Errorf("failed to hide comment: %w", err)
+					return "", err
 				}
 			} else if opt.Resolve {
 				if c.ReviewComment != nil {
