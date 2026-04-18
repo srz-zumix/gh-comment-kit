@@ -60,6 +60,7 @@ If the comment body exceeds GitHub's size limit (65,536 characters), it is autom
 | `--line` | `-l` | `0` | Line number to comment on (requires `--path`) |
 | `--update` | | `false` | Update (edit) the last comment in the group instead of creating a new one |
 | `--delete` | | `false` | Delete previous comments in the same group before posting |
+| `--hide` | | | Hide previous comments in the same group with the specified reason: `ABUSE`, `DUPLICATE`, `OFF_TOPIC`, `OUTDATED`, `RESOLVED`, `SPAM` |
 | `--resolve` | | `false` | Resolve previous review comments in the same group |
 | `--truncate` | | `false` | Truncate the comment body if it exceeds the size limit instead of splitting |
 | `--dryrun` | `-n` | `false` | Print what would be posted without actually posting |
