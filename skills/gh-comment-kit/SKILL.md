@@ -1,6 +1,6 @@
 ---
 name: gh-comment-kit
-description: gh-comment-kit GitHub CLI extension for posting and managing trackable comments on GitHub issues and pull requests. Use when posting review comments that should be tracked across runs (CI bots, scheduled jobs), updating or replacing previous comments by group, hiding/resolving outdated comments, or listing comments and trackable comments on issues/PRs.
+description: gh-comment-kit GitHub CLI extension for posting and managing trackable comments on GitHub pull requests, and listing comments on issues or pull requests. Use when posting review comments that should be tracked across runs (CI bots, scheduled jobs), updating or replacing previous comments by group, hiding/resolving outdated PR comments, or listing comments on an issue or PR. Posting/updating/hiding trackable comments is supported on pull requests only; the `list` command additionally accepts issues.
 license: MIT
 compatibility:
   - Requires gh CLI (https://cli.github.com) with gh-comment-kit extension installed (`gh extension install srz-zumix/gh-comment-kit`)
@@ -8,9 +8,13 @@ compatibility:
 
 # gh-comment-kit
 
-`gh-comment-kit` is a GitHub CLI extension for posting trackable comments on GitHub issues and pull requests, and providing the latest updates by managing previously posted comments (update, delete, hide, resolve).
+`gh-comment-kit` is a GitHub CLI extension for posting trackable comments on GitHub **pull requests**, and providing the latest updates by managing previously posted comments (update, delete, hide, resolve). The plain `list` command also works on issues.
 
-Trackable comments embed metadata (group identifier) so subsequent runs can find, update, or hide the previous comments without leaving the conversation cluttered.
+Trackable comments embed metadata (a user-supplied **group identifier** passed via `--group`, default `gh-comment-kit`) so subsequent runs can find, update, hide, or resolve the previous comments in the same group without cluttering the conversation. Only comments posted through `gh comment-kit review comment` carry this metadata; regular GitHub comments are not tracked.
+
+**Scope at a glance**:
+- `gh comment-kit list` — issue **or** PR (read-only)
+- `gh comment-kit review comment` / `review list` / `review hide` — **pull requests only**
 
 ## Prerequisites
 
