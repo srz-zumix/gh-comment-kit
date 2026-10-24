@@ -6,7 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/cli/go-gh/v2/pkg/repository"
-	"github.com/google/go-github/v90/github"
+	"github.com/google/go-github/v93/github"
 	"github.com/srz-zumix/go-gh-extension/pkg/actions"
 	"github.com/srz-zumix/go-gh-extension/pkg/gh"
 )
@@ -147,7 +147,7 @@ func (g *GitHubReviewer) Comment(body string, target *CommentTarget, meta MetaDa
 				}
 			} else if opt.Resolve {
 				if c.ReviewComment != nil {
-					err = gh.ResolvePullRequestComment(g.ctx, g.client, g.Repository, g.Target, c.ReviewComment)
+					err = gh.ResolvePullRequestComment(g.ctx, g.client, g.Repository, g.Target, c.ReviewComment, gh.ResolutionReasonAddressed)
 					if err != nil {
 						return "", fmt.Errorf("failed to resolve comment: %w", err)
 					}
@@ -219,7 +219,7 @@ func (g *GitHubReviewer) createComment(commentBody string, target *CommentTarget
 	}
 }
 
-func (g *GitHubReviewer) createPullRequestComment(body string, target *CommentTarget) (*github.PullRequestComment, error) {
+func (g *GitHubReviewer) createPullRequestComment(body string, target *CommentTarget) (*github.CreatePullRequestCommentRequest, error) {
 	if target == nil {
 		return nil, nil
 	}
@@ -229,21 +229,21 @@ func (g *GitHubReviewer) createPullRequestComment(body string, target *CommentTa
 	}
 	if target.Path != nil && *target.Path != "" {
 		if target.Line != nil && *target.Line > 0 {
-			return &github.PullRequestComment{
-				Body:        &body,
-				Path:        target.Path,
+			return &github.CreatePullRequestCommentRequest{
+				Body:        body,
+				Path:        *target.Path,
 				Line:        target.Line,
 				StartLine:   target.StartLine,
 				Side:        target.Side,
 				SubjectType: github.Ptr("line"),
-				CommitID:    &commitID,
+				CommitID:    commitID,
 			}, nil
 		}
-		return &github.PullRequestComment{
-			Body:        &body,
-			Path:        target.Path,
+		return &github.CreatePullRequestCommentRequest{
+			Body:        body,
+			Path:        *target.Path,
 			SubjectType: github.Ptr("file"),
-			CommitID:    &commitID,
+			CommitID:    commitID,
 		}, nil
 	}
 	return nil, nil
